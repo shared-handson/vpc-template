@@ -1,0 +1,33 @@
+# ローカルの.terraformディレクトリ
+.terraform/
+
+# .tfstateファイル
+*.tfstate
+*.tfstate.*
+
+# クラッシュログファイル
+crash.log
+crash.*.log
+
+# パスワード、プライベートキー、その他のシークレットなど、機密データを含む可能性のある
+# 全ての.tfvarsファイルを除外します。これらは、環境に応じて変更される可能性のある
+# 機密情報であるため、バージョン管理に含めるべきではありません。
+*.tfvars
+*.tfvars.json
+
+# オーバーライドファイルは、通常リソースをローカルで上書きするために使用され、
+# チェックインされないため、無視します。
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# terraform applyによって作成される一時的なロック情報ファイルを無視します。
+.terraform.tfstate.lock.info
+
+# CLI設定ファイルを無視します。
+.terraformrc
+terraform.rc
+
+# 鍵ファイル
+.pem
