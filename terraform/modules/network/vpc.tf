@@ -19,6 +19,18 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
+resource "aws_route53_zone" "private" {
+  name = var.domain_name
+
+  vpc {
+    vpc_id = aws_vpc.main.id
+  }
+
+  tags = {
+    Name = "rt53-zone-${var.project_name}"
+  }
+}
+
 
 ######################################################################
 # サブネット関連
@@ -191,21 +203,5 @@ resource "aws_vpc_endpoint" "dynamodb" {
 
   tags = {
     Name = "vpce-dynamodb-${var.project_name}"
-  }
-}
-
-
-######################################################################
-# Route53関連
-######################################################################
-resource "aws_route53_zone" "private" {
-  name = var.domain_name
-
-  vpc {
-    vpc_id = aws_vpc.main.id
-  }
-
-  tags = {
-    Name = "rt53-zone-${var.project_name}"
   }
 }

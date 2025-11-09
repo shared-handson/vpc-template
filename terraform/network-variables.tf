@@ -56,8 +56,8 @@ variable "static_ubuntu_arm64" {
   default     = null
 }
 
-variable "bastion_instance" {
-  description = "Configuration for bastion instances"
+variable "natbastion_instance" {
+  description = "Configuration for NAT bastion instances"
   type = object({
     instance_type    = string
     architecture     = string
@@ -70,4 +70,17 @@ variable "bastion_instance" {
     az_2word         = "1a"
     root_volume_size = 20
   }
+}
+
+variable "iscreate_key_bastion" {
+  description = "Flag create key bastion"
+  type        = boolen
+  default     = false
+}
+
+
+variable "iscreate_key_workload" {
+  description = "Flag create key workload"
+  type        = boolen
+  default     = false
 }

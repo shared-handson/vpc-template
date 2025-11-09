@@ -55,13 +55,23 @@ static_ubuntu_arm64 = "ami-05e2ae907de70068a"
 
 
 # ───────────────────────────────────────────────────────────────
-# Bastion Instance Configuration
+# NAT Bastion Instance Configuration
 # ───────────────────────────────────────────────────────────────
 
 # ＜任意＞ 踏み台インスタンスの設定
-bastion_instance = {
+natbastion_instance = {
   instance_type    = "t4g.nano" # インスタンスタイプ(例: t4g.nano, t3.micro)
   architecture     = "arm64"    # アーキテクチャ(arm64またはamd64)
   az_2word         = "1a"       # AZのサフィックス(例: 1a, 1c, 1d)
   root_volume_size = 20         # ルートボリュームサイズ(GB単位)
 }
+
+
+# ───────────────────────────────────────────────────────────────
+# Security Configuration
+# ───────────────────────────────────────────────────────────────
+
+# ＜任意＞ 生成した秘密鍵をpemファイルとして書き出すかどうか。
+iscreate_key_bastion  = true
+iscreate_key_workload = true
+

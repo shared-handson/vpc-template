@@ -33,3 +33,21 @@ variable "domain_name" {
   description = "Domain name for the private hosted zone"
   type        = string
 }
+
+variable "natbastion_instance" {
+  description = "Configuration for NAT bastion instances"
+  type = object({
+    instance_type    = string
+    architecture     = string
+    az_2word         = string
+    root_volume_size = number
+  })
+}
+
+variable "ami_id" {
+  description = "AMI ID map"
+  type = object({
+    amd64 = string
+    arm64 = string
+  })
+}
