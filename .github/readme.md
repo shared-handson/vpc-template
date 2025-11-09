@@ -58,7 +58,11 @@ graph TB
 
 ## 構成モジュール
 
-### network モジュール
+### network モジュール(統合モジュール)
+
+VPC に関連する全てのリソースを一元管理する統合モジュールです。
+
+#### vpc.tf
 
 VPC、サブネット、ルートテーブル、VPC エンドポイント、Route53 プライベートホストゾーンを管理します。
 
@@ -69,23 +73,23 @@ VPC、サブネット、ルートテーブル、VPC エンドポイント、Rout
 - VPC エンドポイント(S3/DynamoDB)
 - プライベートホストゾーン
 
-### security モジュール
+#### security.tf
 
 キーペア、セキュリティグループ、IAM ロール/インスタンスプロフィールを管理します。
 
 - ED25519 秘密鍵の自動生成
-- EC2 キーペアの作成(bastion/workload)
-- Bastion 用セキュリティグループ
+- EC2 キーペアの作成(natbastion/workload)
+- NAT Bastion 用セキュリティグループ
 - SSM 管理用 IAM ロールとインスタンスプロフィール
 
-### compute_nat モジュール
+#### natbastion.tf
 
 NAT 機能を持つ Bastion インスタンスを管理します。
 
 - NAT Bastion インスタンスの作成
 - Elastic IP の割り当て
 - プライベートサブネット用ルート設定
-- Route53 レコード登録(bastion.internal)
+- Route53 レコード登録(natbastion.internal)
 
 ## セットアップ手順
 
@@ -117,12 +121,15 @@ az_count     = "3"
 vpc_cidr     = "10.0.0.0/16"
 domain_name  = "internal"
 
-bastion_instance = {
+natbastion_instance = {
   instance_type    = "t4g.nano"
   architecture     = "arm64"
   az_2word         = "1a"
   root_volume_size = 20
 }
+
+iscreate_key_bastion  = true
+iscreate_key_workload = true
 ```
 
 ### 4. Terraform の実行
@@ -135,19 +142,21 @@ terraform apply
 
 ### 5. 秘密鍵の取得
 
-apply が完了すると、以下の秘密鍵ファイルが生成されます。
+apply が完了すると、iscreate_key フラグを true に設定している場合、以下の秘密鍵ファイルが生成されます。
 
-- `bastion.pem`: Bastion インスタンス接続用
+- `natbastion.pem`: NAT Bastion インスタンス接続用
 - `workload.pem`: ワークロードインスタンス接続用
 
-### 6. Bastion への接続
+注: デフォルトでは両フラグとも false のため、ファイルは生成されません。必要に応じて terraform.tfvars で有効化してください。
+
+### 6. NAT Bastion への接続
 
 ```bash
-chmod 600 bastion.pem
-ssh -i bastion.pem ec2-user@<bastion-eip>
+chmod 600 natbastion.pem
+ssh -i natbastion.pem ec2-user@<natbastion-eip>
 ```
 
-Bastion EIP は、terraform output で確認できます。
+NAT Bastion EIP は、terraform output で確認できます。
 
 ```bash
 terraform output connect_from_inet
@@ -272,20 +281,21 @@ static_ubuntu_arm64 = "ami-xxxxxxxxxxxxxxxxx"
 
 ### リソースプレフィックス一覧
 
-| リソースタイプ       | プレフィックス | 例                        |
-| -------------------- | -------------- | ------------------------- |
-| VPC                  | vpc-           | vpc-myproject             |
-| Subnet               | sb-            | sb-pub1a-myproject        |
-| Route Table          | rtb-           | rtb-pub-myproject         |
-| Internet Gateway     | igw-           | igw-myproject             |
-| Security Group       | sg-            | sg-bastion-myproject      |
-| EC2 Instance         | ec2-           | ec2-bastion-myproject     |
-| EIP                  | eip-           | eip-bastion-myproject     |
-| VPC Endpoint         | vpce-          | vpce-s3-myproject         |
-| Route53 Zone         | rt53-zone-     | rt53-zone-myproject       |
-| Key Pair             | kp-            | kp-bastion-myproject      |
-| IAM Role             | role-          | role-bastion-myproject    |
-| IAM Instance Profile | profile-       | profile-bastion-myproject |
+| リソースタイプ       | プレフィックス | 例                           |
+| -------------------- | -------------- | ---------------------------- |
+| VPC                  | vpc-           | vpc-myproject                |
+| Subnet               | sb-            | sb-pub1a-myproject           |
+| Route Table          | rtb-           | rtb-pub-myproject            |
+| Internet Gateway     | igw-           | igw-myproject                |
+| Security Group       | sg-            | sg-natbastion-myproject      |
+| EC2 Instance         | ec2-           | ec2-natbastion-myproject     |
+| EIP                  | eip-           | eip-natbastion-myproject     |
+| VPC Endpoint         | vpce-          | vpce-s3-myproject            |
+| Route53 Zone         | rt53-zone-     | rt53-zone-myproject          |
+| Key Pair             | kp-            | kp-natbastion-myproject      |
+| IAM Role             | role-          | role-natbastion-myproject    |
+| IAM Instance Profile | profile-       | profile-natbastion-myproject |
+| EBS Volume           | ebs-           | ebs-natbastion-myproject     |
 
 ## コスト最適化
 
@@ -317,24 +327,24 @@ AWS NAT Gateway は高額なため、このプロジェクトでは EC2 ベー�
 
 ### Private サブネットからインターネットに接続できない
 
-1. Bastion インスタンスが起動しているか確認
-2. Bastion インスタンスの source_dest_check が無効になっているか確認
-3. プライベートサブネットのルートテーブルに 0.0.0.0/0→Bastion ENI のルートがあるか確認
+1. NAT Bastion インスタンスが起動しているか確認
+2. NAT Bastion インスタンスの source_dest_check が無効になっているか確認
+3. プライベートサブネットのルートテーブルに 0.0.0.0/0→NAT Bastion ENI のルートがあるか確認
 
 ```bash
-aws ec2 describe-instances --instance-ids <bastion-instance-id> \
+aws ec2 describe-instances --instance-ids <natbastion-instance-id> \
   --query 'Reservations[0].Instances[0].SourceDestCheck'
 ```
 
-### SSH で Bastion に接続できない
+### SSH で NAT Bastion に接続できない
 
 1. セキュリティグループで SSH(22/tcp)が許可されているか確認
 2. 秘密鍵のパーミッションが 600 になっているか確認
 3. Elastic IP が正しく割り当てられているか確認
 
 ```bash
-chmod 600 bastion.pem
-aws ec2 describe-addresses --filters "Name=tag:Name,Values=eip-bastion-*"
+chmod 600 natbastion.pem
+aws ec2 describe-addresses --filters "Name=tag:Name,Values=eip-natbastion-*"
 ```
 
 ### Terraform Apply が失敗する
@@ -369,7 +379,7 @@ terraform output connect_from_inet
 
 ```json
 {
-  "bastion": "54.XXX.XXX.XXX/32"
+  "natbastion": "54.XXX.XXX.XXX/32"
 }
 ```
 
