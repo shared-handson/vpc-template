@@ -56,14 +56,14 @@ module "network" {
 }
 
 resource "local_file" "natbastion" {
-  count           = iscreate_key_bastion ? 1 : 0
+  count           = var.iscreate_key_bastion ? 1 : 0
   filename        = "./natbastion.pem"
   content         = module.network.key_pairs["natbastion"].payload
   file_permission = "0600"
 }
 
 resource "local_file" "workload" {
-  count           = iscreate_key_workload ? 1 : 0
+  count           = var.iscreate_key_workload ? 1 : 0
   filename        = "./workload.pem"
   content         = module.network.key_pairs["workload"].payload
   file_permission = "0600"

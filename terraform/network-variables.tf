@@ -74,13 +74,13 @@ variable "natbastion_instance" {
 
 variable "iscreate_key_bastion" {
   description = "Flag create key bastion"
-  type        = boolen
+  type        = bool
   default     = false
 }
 
 
 variable "iscreate_key_workload" {
   description = "Flag create key workload"
-  type        = boolen
+  type        = bool
   default     = false
 }
